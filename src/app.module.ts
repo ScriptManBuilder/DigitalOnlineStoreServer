@@ -6,6 +6,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
 import { ProductsModule } from './products/products.module';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { ProductsModule } from './products/products.module';
       isGlobal: true,
     }),
     PrismaModule,
+    CommonModule,
     AuthModule,
     AdminModule,
     ProductsModule,

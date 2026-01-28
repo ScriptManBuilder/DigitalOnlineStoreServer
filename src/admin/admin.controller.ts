@@ -51,4 +51,10 @@ export class AdminController {
   async getAllUsers() {
     return this.adminService.getAllUsers();
   }
+
+  @Get('total-price')
+  @UseGuards(AdminJwtAuthGuard)
+  async getTotalPrice() {
+    return this.adminService.getTotalPrice();
+  }
 }

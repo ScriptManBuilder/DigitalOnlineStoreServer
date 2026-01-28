@@ -78,4 +78,16 @@ export class AdminService {
 
     return users;
   }
+
+  async getTotalPrice() {
+    const result = await this.prisma.product.aggregate({
+      _sum: {
+        price: true,
+      },
+    });
+
+    return {
+      totalPrice: result._sum.price || 0,
+    };
+  }
 }

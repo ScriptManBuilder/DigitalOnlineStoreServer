@@ -2,17 +2,29 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { FileUploadService } from '../common/services/file-upload.service';
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private fileUploadService: FileUploadService,
+  ) {}
 
-  async create(dto: CreateProductDto) {
+  async create(dto: CreateProductDto, file?: Express.Multer.File) {
+    let imageUrl: string | null = null;
+    
+    if (file) {
+      const uploadResult = await this.fileUploadService.uploadFile(file, 'products');
+      imageUrl = uploadResult.url;
+    }
+
     const product = await this.prisma.product.create({
       data: {
         name: dto.name,
         description: dto.description,
         price: dto.price,
+        imageUrl,
       },
     });
 
@@ -39,8 +51,21 @@ export class ProductsService {
     return product;
   }
 
-  async update(id: string, dto: UpdateProductDto) {
-    await this.findOne(id); // Проверка существования
+  async update(id: string, dto: UpdateProductDto, file?: Express.Multer.File) {
+    const existingProduct = await this.findOne(id); // Проверка существования
+
+    let imageUrl = existingProduct.imageUrl;
+
+    // Если загружена новая фотография
+    if (file) {
+      // Удаляем старую фотографию
+      if (existingProduct.imageUrl) {
+        await this.fileUploadService.deleteFile(existingProduct.imageUrl);
+      }
+      // Загружаем новую
+      const uploadResult = await this.fileUploadService.uploadFile(file, 'products');
+      imageUrl = uploadResult.url;
+    }
 
     const product = await this.prisma.product.update({
       where: { id },
@@ -48,6 +73,7 @@ export class ProductsService {
         name: dto.name,
         description: dto.description,
         price: dto.price,
+        imageUrl,
       },
     });
 
@@ -55,7 +81,12 @@ export class ProductsService {
   }
 
   async remove(id: string) {
-    await this.findOne(id); // Проверка существования
+    const product = await this.findOne(id); // Проверка существования
+
+    // Удаляем файл фотографии, если он существует
+    if (product.imageUrl) {
+      await this.fileUploadService.deleteFile(product.imageUrl);
+    }
 
     await this.prisma.product.delete({
       where: { id },
