@@ -13,6 +13,14 @@ datasource db {
   provider = "postgresql"
 }
 
+// Статусы заказа
+enum OrderStatus {
+  PROCESSING  // В обработке
+  ACCEPTED    // Принято
+  SHIPPED     // Отправлено
+  DELIVERED   // Доставлено
+}
+
 model User {
   id          String   @id @default(uuid())
   email       String   @unique
@@ -21,6 +29,9 @@ model User {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  
+  cart        Cart?
+  orders      Order[]
 }
 
 model Admin {
@@ -40,4 +51,56 @@ model Product {
   imageUrl    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+}
+
+// Корзина пользователя (у каждого пользователя одна корзина)
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+// Товар в корзине
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cartId, productId]) // Один продукт в корзине только один раз
+}
+
+// Заказ
+model Order {
+  id          String      @id @default(uuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      OrderStatus @default(PROCESSING)
+  totalPrice  Float
+  items       OrderItem[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+// Товар в заказе (копия данных на момент заказа)
+model OrderItem {
+  id          String   @id @default(uuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  productName String   // Сохраняем имя продукта на момент заказа
+  productPrice Float   // Сохраняем цену на момент заказа
+  quantity    Int
+  createdAt   DateTime @default(now())
 }

@@ -18,8 +18,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(), // Из заголовка Authorization: Bearer TOKEN
         (request: Request) => {
-          return request?.cookies?.access_token;
+          return request?.cookies?.access_token; // Или из cookie
         },
       ]),
       ignoreExpiration: false,
@@ -37,7 +38,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
         throw new UnauthorizedException();
       }
 
-      return { userId: user.id, email: user.email, type: 'user' };
+      return { sub: user.id, userId: user.id, email: user.email, type: 'user' };
     }
 
     throw new UnauthorizedException();
